@@ -44,12 +44,11 @@ using Subset = Block::Subset;
 
 namespace {
 
- double get_sign( const PolyhedralFunction * function ) {
+ double get_sign( PolyhedralFunction * function ) {
   return( function->is_convex() ? - 1.0 : 1.0 );
- }
+  }
 
 /*--------------------------------------------------------------------------*/
-
  /** Given a pointer to a PolyhedralFunction representing the function
   *
   *     f( x ) = max { a_i x + b_i : i = 0, ... , m - 1 }
@@ -66,7 +65,8 @@ namespace {
   *
   * where s = - 1 in the convex case and s = 1 in the concave case.
   */
- AbstractBlock * build_lp( const PolyhedralFunction * function ) {
+
+ AbstractBlock * build_lp( PolyhedralFunction * function ) {
 
   const auto & A = function->get_A();
 
@@ -254,11 +254,13 @@ void CutProcessing::remove_redundant_cuts( PolyhedralFunction * function )
  auto lp = ::build_lp( function );
 
  if( config_filename.empty() ) {
-  auto solver = new CPXMILPSolver;
-  solver->set_par( solver->int_par_str2idx( "intLogVerb" ) , 0 );
-  solver->set_par( solver->dbl_par_str2idx( "dblFAccSol" ) , 1.0e-15 );
-  solver->set_par( solver->dbl_par_str2idx( "dblRelAcc" ) , 1.0e-15 );
-  lp->register_Solver( solver );
+  auto bsc = new BlockSolverConfig();
+  auto cc = new ComputeConfig();
+  cc->set_par( "intLogVerb" , int( 0 ) );
+  cc->set_par( "dblFAccSol" , double( 1.0e-15 ) );
+  cc->set_par( "dblRelAcc" , double( 1.0e-15 ) );
+  bsc->add_ComputeConfig( "CPXMILPSolver" , cc );
+  bsc->apply( lp );
  }
  else {
   auto solver_config = dynamic_cast< BlockSolverConfig * >
